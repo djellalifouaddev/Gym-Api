@@ -1,0 +1,398 @@
+openapi: 3.0.3
+info:
+  title: Combined API
+  version: 1.0.0
+  description: >
+    Combined API for authentication, admin management, user management, exercise types, and more.
+
+servers:
+  - url: http://localhost:3000/auth
+  - url: http://localhost:3000/admin
+  - url: http://localhost:3000/badges
+  - url: http://localhost:3000/user
+  - url: http://localhost:3000/users
+  - url: http://localhost:3000/exercise-types
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Room:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Fitness Zone
+        capacity:
+          type: integer
+          example: 30
+        equipments:
+          type: array
+          items:
+            type: string
+          example: ["Treadmill", "Dumbbells"]
+        difficultyLevel:
+          type: string
+          example: Intermediate
+        approved:
+          type: boolean
+          example: false
+        owner:
+          type: string
+          description: User ID
+    Challenge:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        difficulty:
+          type: string
+        type:
+          type: string
+        duration:
+          type: integer
+        createdBy:
+          type: string
+    Workout:
+      type: object
+      properties:
+        challenge:
+          type: string
+        date:
+          type: string
+          format: date-time
+        durationMinutes:
+          type: integer
+        caloriesBurned:
+          type: number
+        completed:
+          type: boolean
+    Badge:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        rules:
+          type: string
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+        username:
+          type: string
+          example: admin
+        role:
+          type: string
+          enum: [SUPER_ADMIN, ADMIN, USER]
+        active:
+          type: boolean
+          example: true
+    ExerciseType:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Cardio
+        description:
+          type: string
+          example: Exercises to improve heart and lung endurance
+        musclesTargeted:
+          type: array
+          items:
+            type: string
+          example: ["Legs", "Heart"]
+
+security:
+  - bearerAuth: []
+
+paths:
+  /login:
+    post:
+      summary: Se connecter
+      description: >
+        Authentifie un utilisateur et retourne un token JWT.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  example: admin
+                password:
+                  type: string
+                  example: password
+      responses:
+        200:
+          description: Authentification réussie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT à utiliser dans le header `Authorization`
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        401:
+          description: Identifiants invalides
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Invalid credentials
+
+  /room:
+    get:
+      summary: Voir les informations de sa propre salle
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: La salle du propriétaire
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+        404:
+          description: Room not found
+    put:
+      summary: Mettre à jour sa propre salle
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Room'
+      responses:
+        200:
+          description: Salle mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+        404:
+          description: Room not found
+
+  /challenges:
+    post:
+      summary: Proposer un défi pour sa salle
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Challenge'
+      responses:
+        201:
+          description: Défi créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Challenge'
+        404:
+          description: Room not found
+    get:
+      summary: Lister les défis proposés pour sa salle
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Liste des défis
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Challenge'
+        404:
+          description: Room not found
+
+  /badges:
+    get:
+      summary: Voir ses badges
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Liste des badges de l'utilisateur
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Badge'
+
+  /workouts:
+    post:
+      summary: Enregistrer un entraînement
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Workout'
+      responses:
+        201:
+          description: Entraînement enregistré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workout'
+
+    get:
+      summary: Voir ses entraînements
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Liste des entraînements de l'utilisateur
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Workout'
+
+  /leaderboard:
+    get:
+      summary: Voir le classement des utilisateurs
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Classement
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    _id:
+                      type: string
+                    completedCount:
+                      type: integer
+
+  /exercise-types:
+    post:
+      summary: Créer un type d'exercice
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseType'
+      responses:
+        201:
+          description: Type d'exercice créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseType'
+
+    get:
+      summary: Lister tous les types d'exercices
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Liste des types d'exercices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExerciseType'
+
+  /users:
+    get:
+      summary: Lister tous les utilisateurs
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Liste des utilisateurs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+
+    /{id}/deactivate:
+      patch:
+        summary: Désactiver un utilisateur
+        security:
+          - bearerAuth: []
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema:
+              type: string
+        responses:
+          200:
+            description: Utilisateur désactivé
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/User'
+
+    /{id}/activate:
+      patch:
+        summary: Réactiver un utilisateur
+        security:
+          - bearerAuth: []
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema:
+              type: string
+        responses:
+          200:
+            description: Utilisateur activé
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/User'
+
+    /{id}:
+      delete:
+        summary: Supprimer un utilisateur
+        security:
+          - bearerAuth: []
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema:
+              type: string
+        responses:
+          204:
+            description: Utilisateur supprimé

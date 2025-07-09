@@ -1,0 +1,134 @@
+openapi: 3.0.3
+info:
+  title: Super Admin Rooms API
+  version: 1.0.0
+  description: >
+    API pour la gestion des salles par un super administrateur.
+servers:
+  - url: http://localhost:3000/rooms
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Room:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Fitness Zone
+        capacity:
+          type: integer
+          example: 30
+        equipments:
+          type: array
+          items:
+            type: string
+          example: ["Treadmill", "Dumbbells"]
+        difficultyLevel:
+          type: string
+          example: Intermediate
+        approved:
+          type: boolean
+          example: false
+        owner:
+          type: string
+          description: User ID
+
+security:
+  - bearerAuth: []
+
+paths:
+  /:
+    post:
+      summary: Créer une salle
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Room'
+      responses:
+        201:
+          description: Salle créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+
+    get:
+      summary: Lister toutes les salles
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Liste des salles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Room'
+
+  /{id}:
+    put:
+      summary: Modifier une salle
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Room'
+      responses:
+        200:
+          description: Salle mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+
+    delete:
+      summary: Supprimer une salle
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        204:
+          description: Salle supprimée
+
+  /{id}/approve:
+    post:
+      summary: Approuver une salle
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Salle approuvée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
