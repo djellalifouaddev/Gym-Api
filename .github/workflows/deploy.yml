@@ -40,15 +40,11 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
           script: |
-            # Créer le dossier si absent
-            if [ ! -d /opt/Gym-Api ]; then
-              mkdir -p /opt/Gym-Api
-              cd /opt/Gym-Api
-              git clone https://github.com/djellalifouaddev/Gym-Api.git .
-            else
-              cd /opt/Gym-Api
-              git pull
-            fi
-            docker-compose down || true
+
+            rm -rf /opt/gymapi
+            mkdir -p /opt/gymapi
+            cd /opt/gymapi
+            git clone https://github.com/djellalifouaddev/Gym-Api.git .
+            docker-compose down
             docker-compose build --no-cache
             docker-compose up -d
