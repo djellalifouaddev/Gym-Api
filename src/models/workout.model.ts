@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-
 const workoutSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   challenge: { type: mongoose.Schema.Types.ObjectId, ref: "Challenge", required: true },

@@ -11,6 +11,7 @@ router.use(authenticate, requireUser);
 // Créer un défi
 router.post("/challenges", async (req, res) => {
   const userId = (req as any).user.id;
+  console.log("Creating challenge for user:", userId);
   const challenge = new Challenge({
     ...req.body,
     createdBy: userId
@@ -40,14 +41,12 @@ router.post("/workouts", async (req, res) => {
   await workout.save();
   res.status(201).json(workout);
 });
-
 // Voir ses entraînements
 router.get("/workouts", async (req, res) => {
   const userId = (req as any).user.id;
   const workouts = await Workout.find({ user: userId });
   res.json(workouts);
 });
-
 // Classement des utilisateurs
 router.get("/leaderboard", async (_req, res) => {
   const leaderboard = await Workout.aggregate([
@@ -57,12 +56,54 @@ router.get("/leaderboard", async (_req, res) => {
   ]);
   res.json(leaderboard);
 });
-
 // Voir ses badges
 router.get("/badges", async (req, res) => {
   const userId = (req as any).user.id;
   const badges = await Badge.find({ assignedTo: userId });
   res.json(badges);
 });
+router.post("/challenges/:challengeId/invite", async (req, res) => {
+  const { friendId } = req.body;
+  const challengeId = req.params.challengeId;
+  const challenge = await Challenge.findByIdAndUpdate(
+    challengeId,
+    { $addToSet: { pendingInvitations: friendId } },
+    { new: true }
+  );
+  if (!challenge) return res.status(404).json({ message: "Challenge not found" });
+  res.json({ message: "Invitation envoyée, en attente d'acceptation", challenge });
+});
+router.post("/challenges/:challengeId/accept", async (req, res) => {
+  const userId = (req as any).user.id;
+  const challengeId = req.params.challengeId;
+  const challenge = await Challenge.findOne({
+    _id: challengeId,
+    pendingInvitations: userId
+  });
+  if (!challenge) return res.status(404).json({ message: "Invitation non trouvée" });
+  challenge.participants.push(userId);
+  challenge.pendingInvitations = challenge.pendingInvitations.filter(
+    (id: any) => id.toString() !== userId
+  );
+  await challenge.save();
+  res.json({ message: "Invitation acceptée, tu participes au défi", challenge });
+});
+router.post("/challenges/:challengeId/complete/:badgeId", async (req, res) => {
+  const userId = (req as any).user.id;
+  const challengeId = req.params.challengeId;
+  const badgeId = req.params.badgeId;
 
+  // Vérifie que le badge existe
+  const badgeTemplate = await Badge.findById(badgeId);
+  if (!badgeTemplate) return res.status(404).json({ message: "Badge not found" });
+
+  // Attribue le badge à l'utilisateur (crée une nouvelle instance si besoin)
+  const badge = new Badge({
+    name: badgeTemplate.name,
+    description: badgeTemplate.description,
+    assignedTo: userId
+  });
+  await badge.save();
+  res.json({ message: "Défi complété et badge attribué", badge });
+});
 export default router;

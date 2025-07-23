@@ -1,6 +1,7 @@
 import express from "express";
 import Room from "../models/room.model";
 import Challenge from "../models/challenge.model";
+import User from "../models/user.model";
 import { authenticate, requireAdmin } from "../middleware/auth";
 
 const router = express.Router();
@@ -14,7 +15,6 @@ router.get("/room", async (req, res) => {
   if (!room) return res.status(404).json({ message: "Room not found" });
   res.json(room);
 });
-
 // Mettre à jour sa propre salle
 router.put("/room", async (req, res) => {
   const userId = (req as any).user.id;
@@ -35,6 +35,12 @@ router.post("/challenges", async (req, res) => {
     createdBy: userId,
     score: req.body.score || 0
   });
+
+  await User.findByIdAndUpdate(
+    userId,
+    { $inc: { score: challenge.score } }, // Ajoute le score du défi
+    { new: true }
+  );
   await challenge.save();
   res.status(201).json(challenge);
 });
