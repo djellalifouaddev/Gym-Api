@@ -1,17 +1,17 @@
 version: "3.8"
+
 services:
   app:
     build: .
     ports:
-      - "3003:3003"
+      - "3000:3000"
     environment:
       - MONGODB_URI=mongodb://mongo:27017/gymdb
       - NODE_ENV=development
     depends_on:
       - mongo
-    volumes:
-      - .:/usr/src/app
-    command: npm run start
+    command: node dist/server.js
+
   mongo:
     image: mongo:6
     restart: always
@@ -19,5 +19,6 @@ services:
       - "27017:27017"
     volumes:
       - mongo-data:/data/db
+
 volumes:
   mongo-data:
